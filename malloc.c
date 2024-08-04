@@ -121,3 +121,9 @@ void free(void *block) {
   // Unlock the global mutex
   pthread_mutex_unlock(&global_mem_block_lock);
 }
+
+mem_header_t * getTail(){
+  if(tail)
+    return tail;
+  return NULL;
+}
