@@ -1,5 +1,8 @@
 #include "malloc.h"
+#include "string.h"
+
 #include <pthread.h>
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -71,6 +74,68 @@ mem_header_t *get_bte_freed_memory_block(size_t size){
     current_block = current_block->m.next;
   }
   return NULL;
+}
+
+// Allocate memory for a array and set initial data to 0
+void *calloc(size_t number_elements, size_t element_size) {
+  // Check if parameters are correct
+  if (!number_elements || !element_size)
+    return NULL;
+
+  // Total block of memory;
+  void *block;
+  // Size calcualte variable
+  size_t size;
+  // Calculate the size
+  size = number_elements * element_size;
+  // It's possible for integers to overflow with multiplication like this.
+  // Overflow is checked by comparing the size of a element in the array
+  // to the total size devided by the number of elements
+  if (element_size != size / number_elements)
+    return NULL;
+  
+  // Malloc the block
+  block = malloc(size);
+  // Check if malloc was successful
+  if (!block)
+    return NULL;
+  // Set the block of memory to 0 and for the total size
+  memset(block, 0, size);
+  return  block;
+}
+
+
+// This function is meant to be used as a reallocation of memory it will grow block if needed
+void *realloc(void *memory_block, size_t size){
+  // if memory_block is NULL or size is 0 return allocated memory of size(size) (this reallocates memory)
+  // this means if size > 0, allocated memory with size(size) will be returned (this reallocates memory to size 0)
+  if (!memory_block || !size)
+    return malloc(size);
+
+  // Memory Header
+  // Get the header of the memory block
+  mem_header_t *mem_header = (mem_header_t*)memory_block - 1;
+  // if the size of the block is already bigger or the 
+  // same size as the requested size then requirements 
+  // are already met
+  if (mem_header->m.size >= size)
+    return memory_block;
+
+  // The new memory block with the requested size
+  void *new_block = malloc(size);
+  // Check if malloc was successful
+  if (new_block) {
+    // Copy the memory from the old small memory_block
+    // to the new bigger memory_block
+    memcpy(new_block, memory_block, mem_header->m.size);
+    // Free the old block
+    free(memory_block);
+  }
+  
+  // Return the new bigger memory_block
+  // with old memory_block content
+  return new_block;
+
 }
 
 void free(void *block) {
